@@ -25,6 +25,8 @@ class MockData {
         Owner(name: 'Andrea Solís', email: 'lino@miralocal.mx', password: 'mira1234'),
         Owner(name: 'Jorge Paredes', email: 'feria@miralocal.mx', password: 'mira1234'),
         Owner(name: 'Socorro Pérez', email: 'pan@miralocal.mx', password: 'mira1234'),
+        Owner(name: 'Cliente de prueba', email: 'cliente@miralocal.mx', password: 'mira1234', role: UserRole.cliente),
+        Owner(name: 'Administrador', email: 'admin@miralocal.mx', password: 'admin1234', role: UserRole.administrador),
       ];
 
   static List<Rating> _ratings(String businessId, List<int> dist) {

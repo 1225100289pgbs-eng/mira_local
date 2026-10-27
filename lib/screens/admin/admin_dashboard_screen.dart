@@ -23,7 +23,7 @@ class AdminDashboardScreen extends StatelessWidget {
       confirmLabel: 'Cerrar sesión',
     );
     if (!ok || !context.mounted) return;
-    context.read<AppState>().logoutAdmin();
+    context.read<AppState>().logoutOwner();
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 

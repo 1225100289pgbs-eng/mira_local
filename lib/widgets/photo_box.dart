@@ -32,33 +32,68 @@ class PhotoBox extends StatelessWidget {
     Color(0xFFF0CFC4),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    final text = label;
-    final color = text == null
-        ? AppColors.borde
-        : _tones[text.codeUnits.fold<int>(0, (a, b) => a + b) % _tones.length];
-    final box = Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(8),
-      child: Text(
-        text ?? 'Sin fotografía',
-        textAlign: TextAlign.center,
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
+@override
+Widget build(BuildContext context) {
+  final text = label;
+  final color = text == null
+      ? AppColors.borde
+      : _tones[text.codeUnits.fold<int>(0, (a, b) => a + b) % _tones.length];
+
+  // Lado menor conocido (infinito si el tamaño lo da el aspectRatio).
+  var side = double.infinity;
+  if (width != null && width! < side) side = width!;
+  if (height != null && height! < side) side = height!;
+  final tiny = side < 70; // miniaturas: solo la etiqueta "FOTO"
+  final sized = side.isFinite;
+
+  final content = Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(
+        'FOTO',
         style: GoogleFonts.outfit(
-          fontSize: large ? 18 : 12,
-          color: AppColors.tinta.withValues(alpha: 0.6),
+          fontSize: large ? 14 : (tiny ? 9 : 10),
+          fontWeight: FontWeight.w700,
+          letterSpacing: tiny ? 1 : 1.5,
+          color: AppColors.tinta.withValues(alpha: 0.4),
         ),
       ),
-    );
-    if (aspectRatio != null) {
-      return AspectRatio(aspectRatio: aspectRatio!, child: box);
-    }
-    return SizedBox(width: width, height: height, child: box);
+      if (!tiny)
+        Text(
+          text ?? 'Sin fotografía',
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.outfit(
+            fontSize: large ? 18 : 12,
+            color: AppColors.tinta.withValues(alpha: 0.6),
+          ),
+        ),
+    ],
+  );
+
+  final box = Container(
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+    ),
+    alignment: Alignment.center,
+    padding: EdgeInsets.all(tiny ? 2 : 8),
+    // En cajas de tamaño fijo, FittedBox reduce el contenido para que nunca se desborde.
+    child: sized
+        ? FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: side - (tiny ? 4 : 16),
+              child: content,
+            ),
+          )
+        : content,
+  );
+
+  if (aspectRatio != null) {
+    return AspectRatio(aspectRatio: aspectRatio!, child: box);
   }
+  return SizedBox(width: width, height: height, child: box);
+}
 }

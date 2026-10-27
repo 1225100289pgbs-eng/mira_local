@@ -106,6 +106,22 @@ class AppState extends ChangeNotifier {
   }
 
   bool get adminLogged => _adminLogged;
+  bool get isLoggedIn => _ownerEmail != null;
+
+  UserRole? get role => currentOwner?.role;
+
+  /// Login único para los tres roles. Devuelve el usuario o null si falla.
+  Owner? login(String email, String password) {
+    final e = email.trim().toLowerCase();
+    for (final o in _owners) {
+      if (o.email == e && o.password == password) {
+        _ownerEmail = e;
+        notifyListeners();
+        return o;
+      }
+    }
+    return null;
+  }
 
   bool loginOwner(String email, String password) {
     final e = email.trim().toLowerCase();
@@ -122,17 +138,25 @@ class AppState extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    UserRole role = UserRole.emprendedor,
   }) {
     final e = email.trim().toLowerCase();
     if (_owners.any((o) => o.email == e)) {
       return 'Ya existe una cuenta con ese correo';
     }
-    _owners.add(Owner(name: name.trim(), email: e, password: password));
+    _owners.add(Owner(name: name.trim(), email: e, password: password, role: role));
     _ownerEmail = e;
     notifyListeners();
     return null;
   }
 
+  void becomeEntrepreneur() {
+  final o = currentOwner;
+  if (o == null) return;
+  o.role = UserRole.emprendedor;
+  notifyListeners();
+  }
+  
   void logoutOwner() {
     _ownerEmail = null;
     notifyListeners();

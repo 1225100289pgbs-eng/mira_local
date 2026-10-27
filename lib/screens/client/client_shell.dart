@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../models/business.dart';
+import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
-import 'categories_screen.dart';
-import 'home_screen.dart';
-import 'results_screen.dart';
+import '../../widgets/business_card.dart';
+import '../../widgets/common.dart';
+import '../../widgets/confirmation_dialog.dart';
+import '../entrepreneur/business_form_screen.dart';
+import '../entrepreneur/owner_panel_screen.dart';
+import 'business_profile_screen.dart';
 
-/// Contenedor del flujo del cliente con barra inferior de texto.
+/// Vista del cliente: una sola pantalla con buscador, categorías y lista.
 class ClientShell extends StatefulWidget {
   const ClientShell({super.key});
 
@@ -14,68 +20,141 @@ class ClientShell extends StatefulWidget {
 }
 
 class _ClientShellState extends State<ClientShell> {
-  int _index = 0;
+  final _search = TextEditingController();
+  String? _categoryId;
 
-  static const _labels = ['Inicio', 'Categorías', 'Buscar'];
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _logout() {
+    context.read<AppState>().logoutOwner();
+    Navigator.popUntil(context, (route) => route.isFirst);
+  }
+
+  Future<void> _startBusiness() async {
+    final state = context.read<AppState>();
+    if (state.currentOwner == null) {
+      final login = await confirmDialog(
+        context,
+        title: 'Inicia sesión',
+        message: 'Necesitas una cuenta para registrar tu negocio.',
+        confirmLabel: 'Ir a iniciar sesión',
+      );
+      if (login && mounted) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+      return;
+    }
+    final ok = await confirmDialog(
+      context,
+      title: '¿Registrar tu negocio?',
+      message:
+          'Tu cuenta pasará a ser de emprendedor y podrás administrar tu emprendimiento.',
+      confirmLabel: 'Continuar',
+    );
+    if (!ok || !mounted) return;
+    state.becomeEntrepreneur();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const BusinessFormScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final user = state.currentOwner;
+    final results =
+        state.searchVisible(query: _search.text, categoryId: _categoryId);
+
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: [
-          HomeScreen(onSeeCategories: () => setState(() => _index = 1)),
-          const CategoriesScreen(),
-          const ResultsScreen(),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.borde)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              for (var i = 0; i < _labels.length; i++)
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _index = i),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 14, bottom: 10),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _labels[i],
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight:
-                                  i == _index ? FontWeight.w700 : FontWeight.w500,
-                              color: i == _index
-                                  ? AppColors.terracota
-                                  : AppColors.gris,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Mira Local',
+                          style: AppTheme.titulo(26, color: AppColors.terracota)),
+                      const Text('Descubre lo que hay para tí',
+                          style: TextStyle(color: AppColors.gris)),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: _logout,
+                    child: Text(user == null ? 'Iniciar sesión' : 'Cerrar sesión'),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              child: TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                decoration:
+                    const InputDecoration(hintText: 'Buscar emprendimientos'),
+              ),
+            ),
+            ChipFilter<String>(
+              options: state.categories.map((c) => c.id).toList(),
+              selected: _categoryId,
+              labelOf: state.categoryName,
+              onSelected: (v) => setState(() => _categoryId = v),
+            ),
+            Expanded(
+              child: results.isEmpty
+                  ? const EmptyState(
+                      'No encontramos emprendimientos con esos filtros.')
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+                      itemCount: results.length,
+                      itemBuilder: (context, i) {
+                        final b = results[i];
+                        return BusinessCard(
+                          business: b,
+                          categoryName: state.categoryName(b.categoryId),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  BusinessProfileScreen(businessId: b.id),
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Container(
-                            height: 3,
-                            width: 24,
-                            decoration: BoxDecoration(
-                              color: i == _index
-                                  ? AppColors.terracota
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
+            ),
+            if (user == null || user.role == UserRole.cliente)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                child: PrimaryButton(
+                  label: 'Quiero registrar mi negocio',
+                  outlined: true,
+                  onPressed: _startBusiness,
+                ),
+              ),
+            if (user != null && user.role == UserRole.emprendedor)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                child: PrimaryButton(
+                  label: 'Ir a mi negocio',
+                  outlined: true,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const OwnerPanelScreen()),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

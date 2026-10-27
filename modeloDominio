@@ -1,0 +1,99 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+enum RolUsuario {
+  CLIENTE
+  EMPRENDEDOR
+  ADMINISTRADOR
+}
+
+enum EstadoEmprendimiento {
+  PENDIENTE
+  ACTIVO
+  RECHAZADO
+  SUSPENDIDO
+}
+
+class Usuario {
+  - nombre : String(60)
+  - correo : String(80)
+  - contrasena : String(30)
+  - rol : RolUsuario
+}
+
+class Categoria {
+  - id : Integer
+  - nombre : String(30)
+  - descripcion : String(100)
+}
+
+class Emprendimiento {
+  - id : Integer
+  - nombre : String(60)
+  - descripcion : String(300)
+  - zonaGeneral : String(60)
+  - whatsapp : String(15)
+  - diasAtencion : String(20)
+  - horaApertura : Time
+  - horaCierre : Time
+  - disponible : Boolean
+  - estado : EstadoEmprendimiento
+  + promedioCalificacion() : Decimal(2,1)
+  + cantidadCalificaciones() : Integer
+  + distribucionEstrellas() : Integer[5]
+  + visibleParaClientes() : Boolean
+}
+
+class Producto {
+  - id : Integer
+  - nombre : String(60)
+  - precio : Decimal(8,2)
+  - fotografia : String(100)
+  - disponible : Boolean
+}
+
+class Fotografia {
+  - id : Integer
+  - descripcion : String(100)
+  - esPortada : Boolean
+}
+
+class Calificacion {
+  - id : Integer
+  - estrellas : Integer
+  - comentario : String(200)
+  - fecha : Date
+}
+
+class AvisoModeracion {
+  - id : Integer
+  - estado : EstadoEmprendimiento
+  - motivo : String(200)
+  - fecha : Date
+}
+
+class SolicitudReactivacion {
+  - id : Integer
+  - mensaje : String(300)
+  - fecha : Date
+}
+
+Usuario --> RolUsuario
+Emprendimiento --> EstadoEmprendimiento
+AvisoModeracion --> EstadoEmprendimiento
+
+Usuario "1" -- "0..1" Emprendimiento : posee >
+Emprendimiento "*" -- "1" Categoria : pertenece a >
+Emprendimiento "1" *-- "*" Producto : ofrece
+Emprendimiento "1" *-- "1..*" Fotografia : tiene
+Emprendimiento "1" *-- "*" Calificacion : recibe
+Emprendimiento "1" -- "0..1" AvisoModeracion : recibe >
+Emprendimiento "1" -- "0..1" SolicitudReactivacion : envía >
+
+note right of Usuario
+  CLIENTE: puede explorar como invitado;
+  solo con sesión puede calificar.
+  ADMINISTRADOR: modera emprendimientos.
+end note
+@enduml

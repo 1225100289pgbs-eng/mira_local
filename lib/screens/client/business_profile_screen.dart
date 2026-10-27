@@ -1,20 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/business.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
+import '../../widgets/app_text_field.dart';
 import '../../widgets/common.dart';
+import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/photo_box.dart';
 import '../../widgets/rating_stars.dart';
 import '../../widgets/status_badge.dart';
-import 'gallery_screen.dart';
-import 'rating_screen.dart';
 
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key, required this.businessId});
 
   final String businessId;
+
+  void _openPhoto(BuildContext context, String label) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PhotoBox(label: label, aspectRatio: 1, large: true),
+              const SizedBox(height: 12),
+              PrimaryButton(label: 'Cerrar', onPressed: () => Navigator.pop(ctx)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _rate(BuildContext context, AppState state, Business b) async {
+    if (state.currentOwner == null) {
+      final login = await confirmDialog(
+        context,
+        title: 'Inicia sesión para calificar',
+        message: 'Solo las personas con cuenta pueden calificar emprendimientos.',
+        confirmLabel: 'Ir a iniciar sesión',
+      );
+      if (login && context.mounted) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+      return;
+    }
+    if (state.currentOwner?.email == b.ownerEmail) {
+      showMessage(context, 'No puedes calificar tu propio emprendimiento',
+          error: true);
+      return;
+    }
+    final sent = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _RatingSheet(business: b),
+    );
+    if (sent == true && context.mounted) {
+      showMessage(context, '¡Gracias por tu calificación!');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,28 +93,17 @@ class BusinessProfileScreen extends StatelessWidget {
           StatusBadge.availability(b.available),
           const SizedBox(height: 16),
           Text(b.description, style: const TextStyle(fontSize: 15, height: 1.4)),
-          SectionTitle(
-            'Fotografías',
-            trailing: TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => GalleryScreen(businessId: b.id)),
-              ),
-              child: Text('Ver galería (${b.photos.length})'),
-            ),
-          ),
-          SizedBox(
-            height: 80,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (final p in b.photos.take(4))
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: PhotoBox(label: p, width: 80, height: 80),
-                  ),
-              ],
-            ),
+          const SectionTitle('Fotografías'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final p in b.photos)
+                GestureDetector(
+                  onTap: () => _openPhoto(context, p),
+                  child: PhotoBox(label: p, width: 100, height: 100),
+                ),
+            ],
           ),
           const SectionTitle('Productos y precios'),
           if (b.products.isEmpty)
@@ -81,6 +118,8 @@ class BusinessProfileScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Row(
                         children: [
+                          PhotoBox(label: p.photo, width: 48, height: 48, radius: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               p.name,
@@ -112,14 +151,67 @@ class BusinessProfileScreen extends StatelessWidget {
               style: TextStyle(color: AppColors.gris, fontSize: 13)),
           const SectionTitle('Contacto'),
           Text('WhatsApp: ${b.whatsapp}', style: const TextStyle(fontSize: 15)),
-          const SizedBox(height: 24),
+          const SectionTitle('Calificaciones'),
+          AppCard(child: RatingSummary(business: b)),
+          const SizedBox(height: 8),
           PrimaryButton(
             label: 'Calificar este emprendimiento',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => RatingScreen(businessId: b.id)),
-            ),
+            onPressed: () => _rate(context, state, b),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingSheet extends StatefulWidget {
+  const _RatingSheet({required this.business});
+
+  final Business business;
+
+  @override
+  State<_RatingSheet> createState() => _RatingSheetState();
+}
+
+class _RatingSheetState extends State<_RatingSheet> {
+  final _comment = TextEditingController();
+  int _stars = 0;
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    if (_stars == 0) {
+      showMessage(context, 'Selecciona de una a cinco estrellas', error: true);
+      return;
+    }
+    context.read<AppState>().addRating(widget.business, _stars, _comment.text);
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Calificar a ${widget.business.name}',
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          RatingInput(value: _stars, onChanged: (v) => setState(() => _stars = v)),
+          const SizedBox(height: 12),
+          AppTextField(
+            controller: _comment,
+            label: 'Comentario (opcional)',
+            maxLines: 3,
+          ),
+          PrimaryButton(label: 'Enviar calificación', onPressed: _send),
         ],
       ),
     );

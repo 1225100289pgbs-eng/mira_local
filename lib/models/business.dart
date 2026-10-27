@@ -19,13 +19,21 @@ extension BusinessStatusX on BusinessStatus {
   }
 }
 
-/// Cuenta simulada de emprendedor (sin autenticación real).
+enum UserRole { cliente, emprendedor, administrador }
+
+/// Cuenta simulada (sin autenticación real) para los tres roles.
 class Owner {
-  Owner({required this.name, required this.email, required this.password});
+  Owner({
+    required this.name,
+    required this.email,
+    required this.password,
+    this.role = UserRole.emprendedor,
+  });
 
   final String name;
   final String email;
   final String password;
+  UserRole role;
 }
 
 class Business {

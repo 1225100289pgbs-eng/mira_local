@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../../widgets/photo_upload_box.dart';
 import '../../models/business.dart';
 import '../../models/product.dart';
 import '../../state/app_state.dart';
@@ -92,7 +92,7 @@ class ManageProductsScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      PhotoBox(label: p.photo, width: 56, height: 56, radius: 10),
+                      PhotoBox(label: p.photo, width: 80, height: 80, radius: 10),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -155,7 +155,7 @@ class _ProductDialogState extends State<_ProductDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _price;
-  late final TextEditingController _photo;
+  late String _photo;
   late bool _available;
 
   @override
@@ -165,7 +165,7 @@ class _ProductDialogState extends State<_ProductDialog> {
     _name = TextEditingController(text: p?.name);
     _price = TextEditingController(
         text: p == null ? '' : p.price.toStringAsFixed(p.price % 1 == 0 ? 0 : 2));
-    _photo = TextEditingController(text: p?.photo);
+    _photo = p?.photo ?? '';
     _available = p?.available ?? true;
   }
 
@@ -173,7 +173,6 @@ class _ProductDialogState extends State<_ProductDialog> {
   void dispose() {
     _name.dispose();
     _price.dispose();
-    _photo.dispose();
     super.dispose();
   }
 
@@ -182,7 +181,7 @@ class _ProductDialogState extends State<_ProductDialog> {
     final price = double.parse(_price.text.trim().replaceAll(',', '.'));
     Navigator.pop(
       context,
-      ProductData(_name.text.trim(), price, _photo.text.trim(), _available),
+      ProductData(_name.text.trim(), price, _photo, _available),
     );
   }
 
@@ -207,11 +206,20 @@ class _ProductDialogState extends State<_ProductDialog> {
                   return (n == null || n <= 0) ? 'Ingresa un precio válido' : null;
                 },
               ),
-              AppTextField(
-                controller: _photo,
-                label: 'Fotografía (descripción)',
-                hint: 'Opcional',
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Fotografía',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
               ),
+              const SizedBox(height: 6),
+              PhotoUploadBox(
+                label: _photo,
+                onTap: () => setState(() {
+                  final n = _name.text.trim();
+                  _photo = n.isEmpty ? 'Foto del producto' : 'Foto de $n';
+                }),
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   const Expanded(child: Text('Disponible')),
