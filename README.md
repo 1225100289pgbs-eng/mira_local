@@ -610,5 +610,76 @@ Formulario de suspensión de emprendimiento con validación de campo obligatorio
 
 6. Evidencia funcional (2 capturas)
 □ Foto del equipo/dispositivo con la app corriendo.
+<img width="877" height="1610" alt="image" src="https://github.com/user-attachments/assets/412dcb36-a8a4-4a01-b3ab-8185f3518b60" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 □ Captura de navegación (flujo login → dashboard → lista → formulario).
-📌 Total mínimo: 12 capturas. Si tu app tiene más formularios por rol, agrégalos.
+
+Inicio de sesión (Login).
+
+<img width="812" height="1600" alt="image" src="https://github.com/user-attachments/assets/b8380376-0080-437c-885a-8e3e1b3fb888" />
+
+
+
+
+
+
+
+
+
+Pantalla principal de Mira Local.
+
+<img width="738" height="1600" alt="image" src="https://github.com/user-attachments/assets/bc2a5858-f5b3-4aa0-8222-c9f1a2ca2640" />
+
+
+
+
+
+
+
+
+
+
+Lista de emprendimientos o detalle de un negocio.
+<img width="293" height="1128" alt="image" src="https://github.com/user-attachments/assets/06967037-4225-4a9d-827b-014b8c856188" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Formulario para calificar un emprendimiento.
+
+<img width="1080" height="955" alt="image" src="https://github.com/user-attachments/assets/377a9912-03c4-48cf-ad39-db7a8203f050" />
